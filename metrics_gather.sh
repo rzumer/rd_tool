@@ -86,7 +86,11 @@ if [ -z "$VMAF_ROOT" ]; then
 fi
 
 if [ -z "$VMAFOSSEXEC" ]; then
-  export VMAFOSSEXEC="$VMAF_ROOT/wrapper/vmafossexec"
+  export VMAFOSSEXEC="$VMAF_ROOT/libvmaf/build/tools/vmafossexec"
+fi
+
+if [ -z "$VMAFMODEL" ]; then
+  export VMAFMODEL="vmaf_v0.6.1.pkl" # File name in $VMAFROOT/model
 fi
 
 if [ -z "$YUV2YUV4MPEG" ]; then
@@ -298,7 +302,7 @@ if [ -f "$VMAFOSSEXEC" ]; then
   FORMAT=yuv420p
   case $CHROMA in
       420p10)
-          FORMAT=yuv444p10le
+          FORMAT=yuv420p10le
           ;;
       444p10)
           FORMAT=yuv444p10le
@@ -309,11 +313,12 @@ if [ -f "$VMAFOSSEXEC" ]; then
   esac
   "$Y4M2YUV" "$FILE" -o ref
   "$Y4M2YUV" "$BASENAME.y4m" -o dis
-  VMAF=$("$VMAFOSSEXEC" $FORMAT $WIDTH $HEIGHT ref dis "$VMAF_ROOT/model/vmaf_v0.6.1.pkl" --thread 1 | tail -n 1)
+  "$VMAFOSSEXEC" $FORMAT $WIDTH $HEIGHT ref dis "$VMAF_ROOT/model/$VMAFMODEL" --log-fmt csv --log "$BASENAME-vmaf.csv" --thread 1 | tail -n 1
+  VMAF=$(cat "$BASENAME-vmaf.csv" | grep -o "[^,]*" | tail -1)
   rm -f ref dis
   echo "$VMAF"
 else
-  echo 0 0 0 0
+  echo "0"
 fi
 
 if [ -e "$TIMERDECOUT" ]; then
